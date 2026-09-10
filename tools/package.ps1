@@ -10,6 +10,10 @@ $binary = Join-Path $projectRoot 'build/Release/ManhuntAchievements.asi'
 if (-not (Test-Path -LiteralPath $binary)) { throw 'Build Release first with tools/build.ps1.' }
 $release = Join-Path $projectRoot "dist/$Version"
 if (Test-Path -LiteralPath $release) { throw "dist/$Version already exists; remove it explicitly or choose another version." }
+# A published clone must never end up under dist, where the next packaging run
+# would wipe it. tools/publish.ps1 updates such a clone in place instead.
+Get-ChildItem -LiteralPath (Join-Path $projectRoot 'dist') -Directory -Recurse -Force -Filter '.git' -ErrorAction SilentlyContinue |
+    ForEach-Object { throw "A git repository lives under dist ($($_.Parent.FullName)); move it out before packaging." }
 
 # Two destinations, kept apart on purpose. Mod sites get the plugin and one
 # plain text file a player can open in Notepad; GitHub gets the repository with
