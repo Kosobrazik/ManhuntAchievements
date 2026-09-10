@@ -1,0 +1,8 @@
+# Никакой перекодировки переводов строк: проект собирается только под Windows,
+# файлы хранятся такими, какими их видит Visual Studio.
+* -text
+
+*.wav binary
+*.txd binary
+*.rpe binary
+*.dat binary

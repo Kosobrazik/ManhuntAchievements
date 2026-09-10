@@ -1,0 +1,19 @@
+/build/
+/dist/
+/diagnostics/
+/.vs/
+*.user
+*.log
+*.obj
+*.pdb
+*.ilk
+*.exp
+*.lib
+
+# Заголовки RenderWare проприетарны: держим локально, не публикуем.
+/third_party/rw/*
+!/third_party/rw/README.md
+
+# Скрипт трофеев PS4-издания — чужая работа и справочный материал: держим
+# локально, см. docs/DEVELOPMENT.md.
+/docs/reference-*.lua

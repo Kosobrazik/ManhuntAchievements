@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32"><Configuration>Debug</Configuration><Platform>Win32</Platform></ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32"><Configuration>Release</Configuration><Platform>Win32</Platform></ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{24FC7567-D14E-42C5-A60A-0294B284BB78}</ProjectGuid>
+    <RootNamespace>ManhuntAchievements</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <PlatformToolset Condition="'$(PlatformToolset)'==''">v143</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
+    <UseDebugLibraries Condition="'$(Configuration)'=='Debug'">true</UseDebugLibraries>
+    <UseDebugLibraries Condition="'$(Configuration)'=='Release'">false</UseDebugLibraries>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <PropertyGroup>
+    <TargetName>ManhuntAchievements</TargetName>
+    <TargetExt>.asi</TargetExt>
+    <OutDir>$(MSBuildThisFileDirectory)..\build\$(Configuration)\</OutDir>
+    <IntDir>$(MSBuildThisFileDirectory)..\build\obj\$(Configuration)\</IntDir>
+    <RWSDK Condition="'$(RWSDK)'==''">$(MSBuildThisFileDirectory)..\third_party\rw</RWSDK>
+  </PropertyGroup>
+  <ItemDefinitionGroup>
+    <ClCompile>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <ExceptionHandling>Sync</ExceptionHandling>
+      <ConformanceMode>false</ConformanceMode>
+      <AdditionalIncludeDirectories>$(RWSDK);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;_USRDLL;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <AdditionalDependencies>Winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <OptimizeReferences>true</OptimizeReferences>
+      <EnableUAC>false</EnableUAC>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)'=='Release'">
+    <ClCompile><Optimization>MaxSpeed</Optimization><RuntimeLibrary>MultiThreaded</RuntimeLibrary><PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions></ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)'=='Debug'">
+    <ClCompile><Optimization>Disabled</Optimization><RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary><PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions></ClCompile>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="dllmain.cpp" />
+    <ClCompile Include="code\core\AchievementSettings.cpp" />
+    <ClCompile Include="code\plugin\AchievementHooks.cpp" />
+    <ClCompile Include="code\plugin\AchievementMenu.cpp" />
+    <ClCompile Include="code\plugin\ControllerUi.cpp" />
+    <ClCompile Include="code\plugin\PluginCompatibility.cpp" />
+    <ClCompile Include="code\plugin\eAchievements.cpp" />
+    <ClCompile Include="code\plugin\eAchievementPersistence.cpp" />
+    <ClCompile Include="code\plugin\eLog.cpp" />
+    <ClCompile Include="code\manhunt\*.cpp" />
+    <ClInclude Include="**\*.h" />
+    <ResourceCompile Include="AchievementSound.rc" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+</Project>

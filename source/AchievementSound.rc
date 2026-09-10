@@ -1,0 +1,3 @@
+#include "resource.h"
+
+IDR_ACHIEVEMENT_UNLOCK_SOUND WAVE "..\\FESEL_R_pitch.wav"
