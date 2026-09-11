@@ -10,6 +10,8 @@ was helped along by **Fire_Head**. Every unlock condition was verified against
 the PS4 trophy script written by **Ernesto Corvi**, so the rules come from the
 console release instead of being guessed at. See [CREDITS.md](CREDITS.md).
 
+**[⬇ Download the latest release](https://github.com/Kosobrazik/ManhuntAchievements/releases/latest)** — the ready-to-play archive, no building needed.
+
 *[Русская версия ниже](#русская-версия).*
 
 - Achievement gallery in the main menu and in the pause menu, English and
@@ -105,6 +107,8 @@ Internals, hook addresses and detection rules are in
 условия сверены со скриптом трофеев PS4-издания, который написал **Ernesto
 Corvi**, — то есть правила взяты у консольной версии, а не угаданы. Подробности
 — [CREDITS.md](CREDITS.md).
+
+**[⬇ Скачать последнюю версию](https://github.com/Kosobrazik/ManhuntAchievements/releases/latest)** — готовый архив, собирать ничего не нужно.
 
 - Галерея достижений в главном меню и в меню паузы, английский и русский текст,
   секретные достижения, уведомления о разблокировке.
