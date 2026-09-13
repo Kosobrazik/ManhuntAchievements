@@ -144,7 +144,7 @@ Ernesto Corvi для эмулятора PS2 на PS4. Он ставит хуки
 ./tools/build.ps1 -Configuration Release -Test
 ./tools/build.ps1 -Configuration Debug
 python tools/check_ginput_compatibility.py --ginput C:/path/to/mhgamepad --exe C:/path/to/manhunt.exe
-./tools/package.ps1 -Version 2.0.0 -Repository https://github.com/...
+./tools/package.ps1 -Version 2.0.1 -Repository https://github.com/...
 ```
 
 Требуются Win32 MSVC и Windows SDK. Заголовки RenderWare проприетарны и в репозиторий не входят: положите их в `third_party/rw` или укажите путь переменной `RWSDK`, см. `third_party/rw/README.md`. Release использует статический runtime; обязательных импортов PluginMH, GInput или XInput нет.

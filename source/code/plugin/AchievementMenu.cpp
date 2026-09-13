@@ -26,9 +26,10 @@ namespace
 	uintptr_t originalMenuDispatch=0, originalMenuBackground=0;
 	uintptr_t originalMainMenuDraw=0, originalMainMenuInput=0;
 	// Continuation for our option-registration detour: the game's own code just
-	// past the overwritten prologue, or another plugin's entry if it got there
-	// first. Only the former needs the four pushes replayed.
-	uintptr_t originalMenuOption=0x5D55C4;
+	// past the whole overwritten prologue (four pushes and the stack reservation
+	// the jump split in half), or another plugin's entry if it got there first.
+	// Only the former needs the prologue replayed.
+	uintptr_t originalMenuOption=0x5D55C7;
 	bool replayMenuOptionPrologue=true;
 	MenuBackInput galleryBack;
 	bool waitForMainBackRelease=false;
@@ -1108,9 +1109,6 @@ namespace
     }
 }
 
-// Entry detour on the game's option registration, active only while a foreign
-// main menu draw is running. Replays the four pushes the jump overwrote and
-// continues inside the original function.
 // Entry detour on the text half of the game's option drawing. Replays the two
 // instructions and the call the jump overwrote, then rejoins the original.
 void __declspec(naked) AchievementMenu::HookMenuOptionText()
@@ -1131,6 +1129,10 @@ void __declspec(naked) AchievementMenu::HookMenuOptionText()
     }
 }
 
+// Entry detour on the game's option registration, active only while a foreign
+// main menu draw is running. The five byte jump covers the four pushes and the
+// first byte of the stack reservation behind them, so the whole prologue is
+// replayed here and the original function resumes past it.
 void __declspec(naked) AchievementMenu::HookMenuOptionRegistered()
 {
     // A function entry, so incoming flags carry nothing and are not preserved.
@@ -1147,6 +1149,7 @@ void __declspec(naked) AchievementMenu::HookMenuOptionRegistered()
         push esi
         push edi
         push ebp
+        sub esp, 0x0C
     chainedOption:
         jmp dword ptr [originalMenuOption]
     }
@@ -1172,7 +1175,7 @@ void AchievementMenu::InitHooks()
         // game's prologue.
         const uintptr_t foreignOption=PluginCompatibility::JumpTarget(0x5D55C0);
         replayMenuOptionPrologue=foreignOption==0;
-        originalMenuOption=foreignOption ? foreignOption : 0x5D55C4;
+        originalMenuOption=foreignOption ? foreignOption : 0x5D55C7;
         InjectHook(0x5D55C0, HookMenuOptionRegistered, PATCH_JUMP);
         // Moving a row means moving both halves of the game's option drawing.
         // Without the text half our row can only be appended at the bottom.
