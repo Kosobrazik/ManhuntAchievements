@@ -76,6 +76,14 @@ Progress lives in the user's Manhunt folder as `Achievements/achievements.dat`
 with a `.bak` beside it. On the first run it is imported from the earlier
 locations; the originals are neither deleted nor modified.
 
+Star ratings earned before the plugin was installed count. The four "three stars
+on every scene of a block of five" achievements read the game's own rating
+table — the same one it unlocks the bonus scenes from — so a save that already
+carries those ratings earns them. Every other condition is measured by the
+plugin itself and therefore has to happen with the plugin running. The PS4
+trophy script counts even those four from its own record, but there nobody could
+have played the game before the trophies existed.
+
 Building needs Visual Studio 2022 or newer, the Windows SDK and RenderWare
 headers — those are proprietary and are not part of this repository, so put them
 into `third_party/rw` or point `RWSDK` at them;
@@ -168,6 +176,14 @@ L1/R1 — страница; Esc, B или круг — назад. Значки 
 Прогресс — в пользовательской папке Manhunt: `Achievements/achievements.dat` и
 `.bak` рядом. При первом запуске переносится из прежних расположений, оригиналы
 не удаляются и не изменяются.
+
+Звёзды, заработанные до установки плагина, засчитываются. Четыре достижения «три
+звезды на каждой сцене блока из пяти» читают собственную таблицу рейтингов игры —
+ту же, по которой она открывает бонусные сцены, — поэтому сохранение с готовыми
+рейтингами их получит. Все остальные условия плагин считает сам, то есть они
+должны случиться при работающем плагине. Скрипт трофеев PS4-издания ведёт по
+своему учёту и эту четвёрку, но там никто не мог пройти игру до появления
+трофеев.
 
 Сборка: Visual Studio 2022 или новее, Windows SDK и заголовки RenderWare —
 проприетарные, в репозиторий не входят, поэтому положите их в `third_party/rw`
