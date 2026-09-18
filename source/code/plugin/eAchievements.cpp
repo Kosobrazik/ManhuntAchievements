@@ -1,6 +1,7 @@
 #include "eAchievements.h"
 #include "eAchievementPersistence.h"
 #include "eLog.h"
+#include "HookSites.h"
 #include "AchievementMenu.h"
 #include "../core/AchievementSettings.h"
 #include "../manhunt/Cheats.h"
@@ -126,15 +127,28 @@ namespace
 			earnedStars, CGameInfo::GetLevelStars(level), time);
 	}
 
-	int __fastcall HookRegisterThrownLureSound(void* manager, void*, eAISounds sound,
-		CEntity* entity, int unknown, int unknown2)
-	{
-		if (sound == LURE_THROWN_MEDIUM && entity && entity->m_pTypeData &&
-			(entity->m_pTypeData->m_ecEntityClass & EC_PEDHEAD) == EC_PEDHEAD)
-			eAchievements::OnSeveredHeadLure();
+	// The hunt objective's sub-goal: 6 is "Check Head" in the game's own table
+	// of names (None, KillEnemy, Search, Investigate, Guard Boundary, Check Body,
+	// Check Head, ...), kept at this offset of cAI_ObjectiveHuntEnemy.
+	constexpr int kHuntSubgoalOffset = 0xB4;
+	constexpr int kCheckHeadSubgoal = 6;
 
-		return CallMethodAndReturn<int, 0x520640, void*, eAISounds, CEntity*, int, int>(
-			manager, sound, entity, unknown, unknown2);
+	// A hunter turning to look at a severed head it has noticed. The PS4 trophy
+	// fires from the same point, the objective's head investigation, and not from
+	// the throw: a head is found by sight, and none of the thrown-object noises
+	// the game registers ever names one.
+	void __fastcall HookStartCheckHead(void* objective, void*, int headID)
+	{
+		CallMethod<0x50DA30, void*, int>(objective, headID);
+		// The transition gives up without a change when the ID no longer names
+		// a head, so only a hunter that actually took the sub-goal counts.
+		const int subgoal = *reinterpret_cast<const int*>(
+			static_cast<const char*>(objective) + kHuntSubgoalOffset);
+		if (eLog::Detailed())
+			eLog::Verbose(__FUNCTION__, "hunt objective turned to head %d: sub-goal %d",
+				headID, subgoal);
+		if (subgoal == kCheckHeadSubgoal)
+			eAchievements::OnHunterChecksHead();
 	}
 
 	int __fastcall HookGetSightingLevel(void* vision, void*, CEntity* target)
@@ -325,7 +339,12 @@ void eAchievements::InitHooks()
 	if (AchievementSettings::bEnableAchievements)
 	{
 		InjectHook(0x47414B, HookSceneFinalize, PATCH_CALL);
-		InjectHook(0x4FC7E1, HookRegisterThrownLureSound, PATCH_CALL);
+		if (memcmp(reinterpret_cast<const void*>(kCheckHeadSite.address),
+				kCheckHeadSite.expected, kCheckHeadSite.size) == 0)
+			InjectHook(kCheckHeadSite.address, HookStartCheckHead, PATCH_CALL);
+		else
+			eLog::Message(__FUNCTION__,
+				"Head investigation is already hooked; Brain Power stays unavailable");
 		InjectHook(0x519357, HookGetSightingLevel, PATCH_CALL);
 		InjectHook(0x5199D8, HookGetSightingLevel, PATCH_CALL);
 		InjectHook(0x466742, HookFinalizePutDownBody, PATCH_CALL);
@@ -820,10 +839,16 @@ void eAchievements::OnPainkillerUsed()
 		++g_sceneState.painkillersUsed;
 }
 
-void eAchievements::OnSeveredHeadLure()
+void eAchievements::OnHunterChecksHead()
 {
 	if (g_sceneState.active && CanTrackSceneProgress())
+	{
 		Unlock(ACH_BRAIN_POWER);
+		return;
+	}
+	eLog::Message(__FUNCTION__, "head investigation ignored: scene active=%d, cheats active=%d, "
+		"scene disqualified=%d", g_sceneState.active ? 1 : 0, AnyCheatActive() ? 1 : 0,
+		g_sceneState.cheatsUsed ? 1 : 0);
 }
 
 void eAchievements::OnPlayerDetected()

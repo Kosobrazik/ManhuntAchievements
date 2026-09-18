@@ -133,7 +133,7 @@ public:
 	// Any hunter dying, however it happened. Arrives from the death handler entry.
 	static void OnHunterDied();
 	static void OnPainkillerUsed();
-	static void OnSeveredHeadLure();
+	static void OnHunterChecksHead();
 	static void OnPlayerDetected();
 	// Every frame while a scene runs. A cheated run need not contain a single
 	// kill - invisibility carries a stealth achievement on its own - and a cheat

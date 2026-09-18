@@ -22,7 +22,6 @@ inline constexpr HookSite kHookSites[] = {
     { 0x4ECDE3, 5, { 0xE8, 0xB8, 0x95, 0x0C, 0x00 }, "kill" },
     { 0x45E688, 5, { 0xE8, 0xD3, 0x14, 0x18, 0x00 }, "painkiller" },
     { 0x47414B, 5, { 0xE8, 0xD0, 0xE1, 0x15, 0x00 }, "scene finalization" },
-    { 0x4FC7E1, 5, { 0xE8, 0x5A, 0x3E, 0x02, 0x00 }, "lure" },
     { 0x519357, 5, { 0xE8, 0x14, 0x1E, 0xF1, 0xFF }, "sighting A" },
     { 0x5199D8, 5, { 0xE8, 0x93, 0x17, 0xF1, 0xFF }, "sighting B" },
     { 0x466742, 5, { 0xE8, 0x69, 0xD2, 0x03, 0x00 }, "body put down" },
@@ -48,6 +47,12 @@ inline constexpr HookSite kExplosiveDamageSite =
 // only the object kill achievements.
 inline constexpr HookSite kPedDeathSite =
     { 0x4ECD10, 5, { 0x53, 0x55, 0x89, 0xCB, 0xBD }, "ped death entry" };
+
+// The single call of the hunt objective's "Check Head" transition: a hunter
+// has noticed a severed head and turns to look at it. The PS4 trophy fires from
+// the same moment. Its absence costs only Brain Power.
+inline constexpr HookSite kCheckHeadSite =
+    { 0x50D308, 5, { 0xE8, 0x23, 0x07, 0x00, 0x00 }, "hunter checks head" };
 
 // Our trampoline replays a call from the game's own prologue. Without it the
 // row cannot be moved and is appended at the bottom of the foreign menu instead.

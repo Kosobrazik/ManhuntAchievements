@@ -92,7 +92,7 @@ does for the original PluginMH.
 
 ```powershell
 ./tools/build.ps1 -Configuration Release -Test
-./tools/package.ps1 -Version 2.0.1 -Repository https://github.com/Kosobrazik/ManhuntAchievements
+./tools/package.ps1 -Version 2.0.2 -Repository https://github.com/Kosobrazik/ManhuntAchievements
 ```
 
 `package.ps1` splits `dist/<version>` in two: `mod-sites` carries the player
@@ -193,7 +193,7 @@ L1/R1 — страница; Esc, B или круг — назад. Значки 
 
 ```powershell
 ./tools/build.ps1 -Configuration Release -Test
-./tools/package.ps1 -Version 2.0.1 -Repository https://github.com/Kosobrazik/ManhuntAchievements
+./tools/package.ps1 -Version 2.0.2 -Repository https://github.com/Kosobrazik/ManhuntAchievements
 ```
 
 `package.ps1` раскладывает `dist/<версия>` на две части: `mod-sites` — архив для

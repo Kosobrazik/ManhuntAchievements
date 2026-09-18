@@ -123,6 +123,26 @@
 Проверено в игре: два попадания в корпус дают 100.0 → 33.3 и смерть без
 признака, одно попадание в голову при 100.0 — с признаком.
 
+## Осмотр головы
+
+Brain Power засчитывается, когда охотник поворачивает к отрубленной голове, а не
+когда её бросают. Брошенная голова — обычный предмет `Severed_Head_(CT)`, и ни
+один шум, который игра регистрирует, её не называет: охотник находит голову
+глазами. Трофейный скрипт PS4 висит на том же месте —
+`cAI_ObjectiveHuntEnemy::MaintainInvestigateHead`.
+
+В PC-версии у цели охоты `cAI_ObjectiveHuntEnemy` подзадача лежит в `+0xB4`;
+значения совпадают с игровой таблицей названий на `0x50DBD0` (None, KillEnemy,
+Search, Investigate, Guard Boundary, Check Body, Check Head, …), `Check Head` —
+это 6. Переход в неё делает `0x50DA30`: по ID находит голову, кладёт её в
+`+0x274` и ставит подзадачу. Вызывается она ровно из одного места, `0x50D308`,
+этот вызов и перехвачен. После оригинала подзадача перечитывается: если ID уже
+не указывает на голову, переход не случился и достижение не засчитывается.
+
+Прежняя версия ждала шума `LURE_THROWN_MEDIUM` с объектом класса `EC_PEDHEAD` на
+`0x4FC7E1` и не срабатывала никогда. Проверено в игре: тот вызов при броске
+головы не выполняется, а новый срабатывает, когда охотник подходит к голове.
+
 ## ManhuntGInput
 
 Интеграция необязательна и не создаёт DLL-зависимость. Код находит уже загруженный `ManhuntGInput.asi` через `GetModuleHandleW`, затем запрашивает `ManhuntGInput_GetUiState`. ABI 1 описан в `source/integration/ManhuntGInputUI.h`.
@@ -144,7 +164,7 @@ Ernesto Corvi для эмулятора PS2 на PS4. Он ставит хуки
 ./tools/build.ps1 -Configuration Release -Test
 ./tools/build.ps1 -Configuration Debug
 python tools/check_ginput_compatibility.py --ginput C:/path/to/mhgamepad --exe C:/path/to/manhunt.exe
-./tools/package.ps1 -Version 2.0.1 -Repository https://github.com/...
+./tools/package.ps1 -Version 2.0.2 -Repository https://github.com/...
 ```
 
 Требуются Win32 MSVC и Windows SDK. Заголовки RenderWare проприетарны и в репозиторий не входят: положите их в `third_party/rw` или укажите путь переменной `RWSDK`, см. `third_party/rw/README.md`. Release использует статический runtime; обязательных импортов PluginMH, GInput или XInput нет.
