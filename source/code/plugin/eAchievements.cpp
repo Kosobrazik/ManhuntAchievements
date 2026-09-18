@@ -970,18 +970,20 @@ void eAchievements::BeginNextPopup()
 
 void eAchievements::PlaySlider()
 {
-	if (!CFrontend::m_gameIsRunning)
-	{
-		g_popupLastTick = GetTickCount64();
-		return;
-	}
 	if (!g_popupActive)
 		BeginNextPopup();
 	if (!g_popupActive || g_currentPopup < 0 || g_currentPopup >= ACH_TOTAL)
 		return;
 
+	// Notifications play on every screen the game draws, menus included, so a
+	// burst unlocked on the results screen is seen out in the main menu instead
+	// of freezing until the next level. Only drawn frames advance one: a gap
+	// longer than a stutter means nothing was on screen - a loading screen, the
+	// window in the background - and the notification waits rather than running
+	// out unseen.
+	constexpr ULONGLONG kLongestFrameGapMs = 250;
 	const ULONGLONG now = GetTickCount64();
-	if (g_popupLastTick != 0)
+	if (g_popupLastTick != 0 && now - g_popupLastTick <= kLongestFrameGapMs)
 		g_popupElapsedMs += now - g_popupLastTick;
 	g_popupLastTick = now;
 
