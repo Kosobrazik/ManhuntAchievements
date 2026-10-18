@@ -21,10 +21,18 @@ extern "C" __declspec(dllexport) int __cdecl ManhuntGInput_GetUiState(
     state->vertical = 0xE000 + kGlyphDpadVertical;
     state->previousPage = 0xE000 + kGlyphL1;
     state->nextPage = 0xE000 + kGlyphR1;
-    state->back = 0xE000 + kGlyphCircle;
+    // The menus' own back button: Triangle in the PS2 layout, B elsewhere.
+    state->back = static_cast<std::uint16_t>(0xE000 + MenuBackGlyph());
     const WORD pressed = g_currentControllerState.Gamepad.wButtons &
         ~g_previousControllerState.Gamepad.wButtons;
     if (pressed & XINPUT_GAMEPAD_LEFT_SHOULDER) state->pressed |= UI::PreviousPage;
     if (pressed & XINPUT_GAMEPAD_RIGHT_SHOULDER) state->pressed |= UI::NextPage;
     return 1;
+}
+
+extern "C" __declspec(dllexport) const wchar_t* __cdecl ManhuntGInput_GetButtonName(std::uint16_t glyph)
+{
+    if (glyph < 0xE000 || glyph > 0xE000 + kGlyphStart) return nullptr;
+    const wchar_t* name = GlyphLabel(glyph - 0xE000u);
+    return name && name[0] ? name : nullptr;
 }

@@ -1,6 +1,8 @@
 /build/
 /dist/
 /diagnostics/
+/mh_achievements/
+/mh_achievements.png
 /.vs/
 *.user
 *.log

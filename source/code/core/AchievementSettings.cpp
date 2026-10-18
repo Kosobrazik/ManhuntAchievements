@@ -1,5 +1,6 @@
 #include "AchievementSettings.h"
 #include "IniFile.h"
+#include "AchievementLanguageSetting.h"
 #include <Windows.h>
 
 bool AchievementSettings::bEnableAchievements = true;
@@ -9,6 +10,7 @@ bool AchievementSettings::bAllowAchievementsWithCheats = true;
 bool AchievementSettings::bEnableLog = false; // Opt-in via Log= in the INI.
 int AchievementSettings::iLogLevel = 0;  // 1 = kills and scenes, 2 = everything.
 int AchievementSettings::iAchievementLanguage = 0;
+std::wstring AchievementSettings::sTranslationFiles = L"data\\ManhuntAchievements\\lang\\*.txt";
 
 std::filesystem::path AchievementSettings::ModuleDirectory()
 {
@@ -39,7 +41,10 @@ void AchievementSettings::Init()
     if (iLogLevel > 2)
         iLogLevel = 2;
     bEnableLog = iLogLevel != 0;
-    iAchievementLanguage = value(L"Language", 0);
-    if (iAchievementLanguage < 0 || iAchievementLanguage > 2)
-        iAchievementLanguage = 0;
+    // Named choices match the other mods; legacy numeric values still load.
+    iAchievementLanguage = AchievementLanguageSetting::Read(path);
+    wchar_t files[MAX_PATH] = {};
+    GetPrivateProfileStringW(L"Achievements", L"TranslationFiles",
+        L"data\\ManhuntAchievements\\lang\\*.txt", files, MAX_PATH, path.c_str());
+    sTranslationFiles = files;
 }

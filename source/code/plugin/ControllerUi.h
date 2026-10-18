@@ -8,6 +8,9 @@ State Read();
 State ReadFrom(ManhuntGInputUI::Query query);
 bool Active(const State& state);
 std::wstring Button(const State& state, std::uint16_t glyph, const wchar_t* fallback);
+// The same with GInput's name lookup given rather than discovered, for tests.
+std::wstring ButtonFrom(const State& state, std::uint16_t glyph, const wchar_t* fallback,
+    ManhuntGInputUI::ButtonNameQuery names);
 int PageSelection(int selection, int direction, int count, int perPage);
 class PageInput {
     bool seen = false;

@@ -1,0 +1,137 @@
+# Manhunt Achievements -- a translation of the gallery
+#
+# For a language the mod does not ship (it ships English, French, German,
+# Italian, Spanish and Russian) -- a fan translation through MHLL, say.
+# Copy this file to a name ending in .txt in this same folder (ptbr.txt,
+# polski.txt, ...), translate it, and save it as UTF-8. Several languages can
+# sit here side by side.
+#
+# Match is how a file says which language it is for: the game's own
+# "control type" label in that language, exactly as the game shows it (the
+# first row of Settings > Controls). The mod uses the file whose Match is what
+# the game shows, so switching the game's language -- MHLL's included --
+# switches the gallery with it. A file with no Match line is used only when the
+# game is in English or a language the mod does not ship.
+#
+# Below that, the gallery's own words, then the 33 achievements in the
+# gallery's order (the PS4 trophy list's): a number and the name, and on the
+# next line the description. A one-word label with a colon in front of the
+# description ("Description:") is dropped, so a trophy list copied from a
+# website goes in nearly as it is. Lines starting with #, ; or [ are ignored,
+# and anything you leave out stays English.
+#
+# Write the letters exactly as your translation's GXT files do: if its font
+# draws one letter in place of another, use that one here too.
+#
+# TitleCount must keep its two %d: they become "12/33".
+
+# Put your language's label here and remove the #, for example:
+# Match = TIPO DE CONTROLE
+
+Gallery.Title          = ACHIEVEMENTS
+Gallery.TitleCount     = ACHIEVEMENTS %d/%d
+Gallery.Unlocked       = ACHIEVEMENT UNLOCKED
+Gallery.KeyboardSelect = Arrows / wheel: select
+Gallery.KeyboardPages  = Tabs: page
+Gallery.Select         = select
+Gallery.Pages          = pages
+Gallery.Back           = back
+
+1. Psychopath
+Description: Unlock all achievements.
+
+2. He Never Saw it Coming
+Description: Perform a gruesome execution.
+
+3. 5-Star Killer
+Description: Earn a 5-star rating for any level.
+
+4. Drug Free is the Way to Be
+Description: Complete any scene on Hardcore difficulty without using any painkillers.
+
+5. Bang, Bang, Boom
+Description: Kill a hunter by shooting an explosive tank.
+
+6. No Crane, No Gain
+Description: Crush a hunter with a refrigerator.
+
+7. Are You Afraid of the Dark?
+Description: Hide a victim's body in the shadows.
+
+8. Pink Mist
+Description: Headshot a hunter with a sniper rifle.
+
+9. Brain Power
+Description: Use a severed head to lure a hunter.
+
+10. Enemy Efficient
+Description: Kill two hunters with one shotgun shell.
+
+11. Ooh, Ooh, Aah, Aah!
+Description: Play any scene wearing the Monkey skin.
+
+12. Follow the White Rabbit
+Description: Complete any scene wearing the Rabbit skin.
+
+13. Death from Behind
+Description: Complete any scene using only executions.
+
+14. Stick to the Shadows
+Description: Complete any scene going completely undetected.
+
+15. Line 'Em Up, Knock 'Em Down
+Description: Kill 30 hunters in Hard as Nails.
+
+16. Fun With Fisticuffs
+Description: Survive until 30 hunters have been killed in the Brawl Game.
+
+17. Ape Escape
+Description: Escape the Zoo alive in Monkey See, Monkey Die!
+
+18. You're Going Nowhere!
+Description: Kill all the Hoods in Time 2 Die in seven minutes or less.
+
+19. Hunter Season
+Description: Kill 45 hunters in one scene.
+
+20. Off With Their Heads!
+Description: Execute 20 hunters in one scene.
+
+21. Hard as Nails
+Description: Earn at least three stars on scenes 1 through 5.
+
+22. Brawl Game
+Description: Earn at least three stars on scenes 6 through 10.
+
+23. Monkey See, Monkey Die!
+Description: Earn at least three stars on scenes 11 through 15.
+
+24. Time 2 Die
+Description: Earn at least three stars on scenes 16 through 20.
+
+25. Murderous
+Description: Complete every scene on Hardcore difficulty.
+
+26. Dangerous
+Description: Complete every scene on Fetish difficulty.
+
+27. 4-Star Freak
+Description: Earn a 4-star rating for every scene on Fetish Difficulty.
+
+28. 5-Star Fiend
+Description: Earn a 5-star rating for every scene on Hardcore Difficulty.
+
+29. Getting Your Hands Dirty
+Description: Kill 10 hunters in one scene using only your fists.
+
+30. Swinging for the Fences
+Description: Kill 10 hunters in one scene using a baseball bat.
+
+31. The Grim Reaper
+Description: Kill 10 hunters in one scene using a sickle.
+
+32. Subtle Slaughter
+Description: Perform an execution with the chainsaw.
+
+33. A Special Gift
+Description: Bring the patrolling hunter's head to the Guard Room during "Mouth of Madness".

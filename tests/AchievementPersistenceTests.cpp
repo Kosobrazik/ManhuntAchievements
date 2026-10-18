@@ -10,6 +10,8 @@
 #include "ControllerUiTests.h"
 #include "MenuBackInputTests.h"
 #include "IniFileTests.h"
+#include "TextEncodingTests.h"
+#include "TranslationTests.h"
 
 namespace fs = std::filesystem;
 
@@ -43,6 +45,9 @@ int main(int argc, char** argv)
 		TestControllerUi();
 		TestMenuBackInput();
 		TestIniByteOrderMark(testRoot);
+		TestAchievementLanguageSettings(testRoot);
+		TestTextEncoding();
+		TestTranslationFile();
 		if (argc > 1)
 		{
 			// A standalone DLL must load outside the game without touching fixed game

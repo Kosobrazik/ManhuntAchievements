@@ -3,6 +3,11 @@
 The 33 achievements of the PS4 release of Manhunt, brought to the PC version as
 a standalone ASI plugin.
 
+Installation, controls, settings and MHLL translation instructions are in the
+[bilingual player README](packaging/README_RU_ENG.txt). There is one
+[ManhuntAchievements.ini](ManhuntAchievements.ini): language and main options
+come first; external translations and diagnostics are at the bottom.
+
 It was split off from [Manhunt.PluginMH](https://github.com/ermaccer/Manhunt.PluginMH)
 by **ermaccer** with the author's permission; the description of the game's
 classes and structures comes from there, and the RenderWare research it rests on
@@ -14,8 +19,9 @@ console release instead of being guessed at. See [CREDITS.md](CREDITS.md).
 
 *[Русская версия ниже](#русская-версия).*
 
-- Achievement gallery in the main menu and in the pause menu, English and
-  Russian text, secret achievements, unlock notifications.
+- Achievement gallery in the main menu and in the pause menu, secret
+  achievements, unlock notifications. English, Russian, German, French, Spanish
+  and Italian, following the language the game itself runs in.
 - Keyboard, mouse and gamepad; Xbox/PlayStation glyphs through ManhuntGInput.
 - Its own progress file with a backup and import of an earlier profile.
 - PluginMH is not required but fully compatible: its menu stays its own and the
@@ -26,7 +32,7 @@ console release instead of being guessed at. See [CREDITS.md](CREDITS.md).
 
 | | |
 | --- | --- |
-| Game | The Steam build, `manhunt.exe` SHA-256 `5001b64f…6b52`. On any other build the plugin checks the bytes of every site, finds none of its own and installs nothing — the game keeps running. |
+| Game | Manhunt for Windows (Steam version). Other game builds may not be compatible. |
 | Loader | [Ultimate ASI Loader](https://github.com/ThirteenAG/Ultimate-ASI-Loader) x86: put `dinput8.dll` into the game folder and rename it to `ddraw.dll`. |
 | System | Windows Vista or newer. No Visual C++ Redistributable needed: static runtime, and the only imports are `kernel32`, `user32` and `winmm`. |
 
@@ -38,7 +44,8 @@ Extract into the game folder:
 Manhunt/
 ├─ ManhuntAchievements.asi
 ├─ ManhuntAchievements.ini
-└─ data/txd/achievements.txd
+├─ data/txd/achievements.txd
+└─ data/ManhuntAchievements/lang/template.txt.example
 ```
 
 The ASI and the INI may move together into `Manhunt/scripts`; leave the texture
@@ -50,10 +57,11 @@ artwork.
 
 | Key | Meaning |
 | --- | --- |
+| `Language` | `auto` — follow the game / MHLL; `en`, `ru`, `de`, `fr`, `es`, `it` — built-in languages. Full English names and legacy `0`–`6` also work. |
 | `Enabled` | `1` — on. |
 | `Sound` | `1` — unlock sound, embedded in the ASI, no extra files needed. |
-| `Language` | `0` — follow the game, `1` — English, `2` — Russian. |
 | `AllowWithCheats` | `1` — cheats do not interfere, as in the original; `0` — a scene played with a cheat does not count. |
+| `TranslationFiles` | UTF-8 translations for automatic language selection (`Language=auto`), including MHLL. |
 | `Log` | `0` — off, `1` — kills and scenes, `2` — everything. |
 
 The PS4 trophy script never looks at cheats at all, so `1` matches the original
@@ -64,6 +72,21 @@ condition the game itself uses to unlock those cheats.
 
 The log is written next to the ASI. Level `2` is extremely chatty and meant for
 a single troubleshooting run, not for playing.
+
+## Language and MHLL translations
+
+Keep the INI beside the ASI and back it up before updating. Restart after manual
+edits. `Language=auto` follows the game and enables external translations. Named choices
+`en`, `ru`, `de`, `fr`, `es`, `it` use built-in languages and disable external gallery translations. This
+changes only the achievements interface; the game font must support the alphabet.
+
+Copy [the template](data/ManhuntAchievements/lang/template.txt.example) into the
+same folder with a `.txt` name. Set `Match` to the exact controls-type label in
+the game translation (GXT key `CONTTYP`). Translate `Gallery.*` and the numbered
+33 achievement names/descriptions; preserve both `%d` fields in
+`Gallery.TitleCount`. Save UTF-8 and restart. With `Language=auto`, switching the
+game language through MHLL selects the matching file. Missing strings remain
+English. Files ending in `.example` are not loaded.
 
 ## Controls, saves, building
 
@@ -92,12 +115,12 @@ does for the original PluginMH.
 
 ```powershell
 ./tools/build.ps1 -Configuration Release -Test
-./tools/package.ps1 -Version 2.0.2 -Repository https://github.com/Kosobrazik/ManhuntAchievements
+./tools/package.ps1 -Version 2.1 -Repository https://github.com/Kosobrazik/ManhuntAchievements
 ```
 
 `package.ps1` splits `dist/<version>` in two: `mod-sites` carries the player
-archive with a single `README.txt` inside, `github` carries the repository tree.
-The player's text lives in `packaging/README.txt` — that is the file to edit.
+archive with a single `README_RU_ENG.txt` inside, `github` carries the repository tree.
+The player's text lives in `packaging/README_RU_ENG.txt` — that is the file to edit.
 
 Internals, hook addresses and detection rules are in
 [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) (Russian). What changed —
@@ -118,8 +141,9 @@ Corvi**, — то есть правила взяты у консольной в�
 
 **[⬇ Скачать последнюю версию](https://github.com/Kosobrazik/ManhuntAchievements/releases/latest)** — готовый архив, собирать ничего не нужно.
 
-- Галерея достижений в главном меню и в меню паузы, английский и русский текст,
-  секретные достижения, уведомления о разблокировке.
+- Галерея достижений в главном меню и в меню паузы, секретные достижения,
+  уведомления о разблокировке. Английский, русский, немецкий, французский,
+  испанский и итальянский — по языку самой игры.
 - Клавиатура, мышь и геймпад; значки Xbox/PlayStation — через ManhuntGInput.
 - Свой файл прогресса с резервной копией и импортом прежнего профиля.
 - PluginMH не нужен, но полностью совместим: его меню остаётся его, строка
@@ -129,7 +153,7 @@ Corvi**, — то есть правила взяты у консольной в�
 
 | | |
 | --- | --- |
-| Игра | Steam-сборка, `manhunt.exe` SHA-256 `5001b64f…6b52`. На другой сборке плагин сверит байты каждого участка, не найдёт своих и ничего не поставит — игра не сломается. |
+| Игра | Manhunt для Windows (Steam-версия). Другие сборки игры могут быть несовместимы. |
 | Загрузчик | [Ultimate ASI Loader](https://github.com/ThirteenAG/Ultimate-ASI-Loader) x86: `dinput8.dll` в папку игры, переименовать в `ddraw.dll`. |
 | Система | Windows Vista или новее. Visual C++ Redistributable не нужен: статический runtime, импорты только `kernel32`, `user32`, `winmm`. |
 
@@ -141,7 +165,8 @@ Corvi**, — то есть правила взяты у консольной в�
 Manhunt/
 ├─ ManhuntAchievements.asi
 ├─ ManhuntAchievements.ini
-└─ data/txd/achievements.txd
+├─ data/txd/achievements.txd
+└─ data/ManhuntAchievements/lang/template.txt.example
 ```
 
 ASI и INI можно перенести вместе в `Manhunt/scripts`, текстуру оставить в
@@ -152,10 +177,11 @@ ASI и INI можно перенести вместе в `Manhunt/scripts`, те
 
 | Параметр | Значение |
 | --- | --- |
+| `Language` | `auto` — язык игры / MHLL; `en`, `ru`, `de`, `fr`, `es`, `it` — встроенные языки. Полные английские названия и прежние `0`–`6` тоже принимаются. |
 | `Enabled` | `1` — включено. |
 | `Sound` | `1` — звук разблокировки, встроен в ASI, отдельные WAV не нужны. |
-| `Language` | `0` — язык игры, `1` — английский, `2` — русский. |
 | `AllowWithCheats` | `1` — читы не мешают, как в оригинале; `0` — сцена с читом не засчитывается. |
+| `TranslationFiles` | UTF-8 переводы при автоматическом выборе языка (`Language=auto`), включая MHLL. |
 | `Log` | `0` — выключено, `1` — убийства и сцены, `2` — всё подряд. |
 
 Скрипт трофеев PS4 читы не проверяет вовсе, поэтому `1` повторяет оригинал, а
@@ -166,6 +192,24 @@ ASI и INI можно перенести вместе в `Manhunt/scripts`, те
 
 Лог пишется рядом с ASI. Уровень `2` очень многословен и предназначен для одного
 разбирательства, а не для игры.
+
+## Язык и перевод для MHLL
+
+Используется один `ManhuntAchievements.ini` с английскими комментариями. Язык
+первым, основные параметры сверху, внешний перевод и диагностика внизу. INI
+лежит рядом с ASI; перед обновлением сохраните его, после ручной правки
+перезапустите игру. `Language=auto` следует игре и включает внешний перевод.
+Значения `en`, `ru`, `de`, `fr`, `es`, `it` выбирают встроенный язык вручную; прежние `0`–`6` сохранены для совместимости. Настройка меняет только
+достижения; буквы выбранного языка должны поддерживаться шрифтом игры.
+
+Скопируйте [образец](data/ManhuntAchievements/lang/template.txt.example) в ту же
+папку под именем с окончанием `.txt`. В `Match` укажите точную подпись «тип
+управления» из перевода игры (GXT-ключ `CONTTYP`). Переведите `Gallery.*` и
+список 33 достижений: номер и название, затем описание на следующей строке.
+Сохраните оба `%d` в `Gallery.TitleCount`, кодировку UTF-8 и перезапустите игру.
+При `Language=auto` смена языка через MHLL выбирает подходящий файл. Пропущенные
+строки остаются английскими. Файлы `.example` сами не загружаются.
+Общая инструкция для игрока — [README на русском и английском](packaging/README_RU_ENG.txt).
 
 ## Управление, сохранения, сборка
 
@@ -193,12 +237,12 @@ L1/R1 — страница; Esc, B или круг — назад. Значки 
 
 ```powershell
 ./tools/build.ps1 -Configuration Release -Test
-./tools/package.ps1 -Version 2.0.2 -Repository https://github.com/Kosobrazik/ManhuntAchievements
+./tools/package.ps1 -Version 2.1 -Repository https://github.com/Kosobrazik/ManhuntAchievements
 ```
 
 `package.ps1` раскладывает `dist/<версия>` на две части: `mod-sites` — архив для
-игрока с одним `README.txt` внутри, `github` — дерево репозитория. Текст для
-игрока лежит в `packaging/README.txt`, его и правьте.
+игрока с одним `README_RU_ENG.txt` внутри, `github` — дерево репозитория. Текст для
+игрока лежит в `packaging/README_RU_ENG.txt`, его и правьте.
 
 Устройство, адреса хуков и правила распознавания —
 [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md). Что изменилось —

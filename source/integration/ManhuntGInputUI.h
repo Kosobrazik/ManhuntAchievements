@@ -25,4 +25,10 @@ struct State {
 };
 static_assert(sizeof(State) == 36, "Unexpected GInput UI ABI packing");
 using Query = int (__cdecl*)(std::uint32_t version, State* state, std::uint32_t size);
+// Optional second export: a button's name for a glyph character (0xE000 + index)
+// as GInput spells it with its icons off -- the chosen console's naming and the
+// player's translation file. Null for anything that is not a button. Look it up
+// separately; a GInput without it simply has no names to offer.
+constexpr const char* ButtonNameExport = "ManhuntGInput_GetButtonName";
+using ButtonNameQuery = const wchar_t* (__cdecl*)(std::uint16_t glyph);
 }

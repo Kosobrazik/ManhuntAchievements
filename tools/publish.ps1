@@ -8,20 +8,21 @@ param(
 # removed, and the clone's own .git is left alone. Commit and push from there.
 $ErrorActionPreference = 'Stop'
 $projectRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
+. (Join-Path $PSScriptRoot 'source_files.ps1')
 if (-not (Test-Path -LiteralPath $Path)) { throw "No such folder: $Path" }
 $clone = (Resolve-Path $Path).Path
+if ($clone -eq $projectRoot -or
+    $clone.StartsWith($projectRoot + [IO.Path]::DirectorySeparatorChar, [StringComparison]::OrdinalIgnoreCase) -or
+    $projectRoot.StartsWith($clone + [IO.Path]::DirectorySeparatorChar, [StringComparison]::OrdinalIgnoreCase)) {
+    throw 'Publish into a separate clone outside the source project.'
+}
 if (-not (Test-Path -LiteralPath (Join-Path $clone '.git'))) {
     throw "$clone is not a git repository; publish only into a clone of the public repository."
 }
 
-Push-Location $projectRoot
-try {
-    $tracked = & git ls-files
-    if ($LASTEXITCODE -ne 0) { throw 'git ls-files failed; run this inside the repository.' }
-} finally { Pop-Location }
-# The RenderWare note lives inside an ignored folder but belongs to the public
-# tree, so it is listed explicitly.
-$publishable = @($tracked) + @('third_party/rw/README.md') | Sort-Object -Unique
+$publishable = @(Get-PublishableSourceFiles -ProjectRoot $projectRoot)
+$oldFiles = @(& git -C $clone ls-files)
+if ($LASTEXITCODE -ne 0) { throw 'Cannot list files in the public clone.' }
 
 foreach ($relative in $publishable) {
     $source = Join-Path $projectRoot $relative
@@ -31,28 +32,21 @@ foreach ($relative in $publishable) {
     Copy-Item -LiteralPath $source -Destination $destination -Force
 }
 
-# Whatever the clone still holds from an earlier version and this tree no longer
-# tracks has to go, or the public repository keeps files nobody maintains.
-$keep = [System.Collections.Generic.HashSet[string]]::new([string[]]($publishable | ForEach-Object { $_ -replace '/', '\' }))
-Get-ChildItem -LiteralPath $clone -Recurse -File -Force |
-    Where-Object { $_.FullName -notlike (Join-Path $clone '.git\*') } |
-    ForEach-Object {
-        $relative = $_.FullName.Substring($clone.Length + 1)
-        if (-not $keep.Contains($relative)) {
+# Remove obsolete tracked files only. Preserve the clone's local build files,
+# SDK headers and any other untracked work.
+$keep = [System.Collections.Generic.HashSet[string]]::new([string[]]$publishable)
+foreach ($relative in $oldFiles) {
+    if (-not $keep.Contains($relative)) {
+        $obsolete = [IO.Path]::GetFullPath((Join-Path $clone $relative))
+        if (-not $obsolete.StartsWith($clone + [IO.Path]::DirectorySeparatorChar, [StringComparison]::OrdinalIgnoreCase)) {
+            throw "Unexpected cleanup path: $obsolete"
+        }
+        if (Test-Path -LiteralPath $obsolete -PathType Leaf) {
             Write-Host "removed: $relative"
-            Remove-Item -LiteralPath $_.FullName -Force
+            Remove-Item -LiteralPath $obsolete -Force
         }
     }
-Get-ChildItem -LiteralPath $clone -Recurse -Directory -Force |
-    Where-Object { $_.FullName -notlike (Join-Path $clone '.git\*') -and $_.FullName -ne (Join-Path $clone '.git') } |
-    Sort-Object { $_.FullName.Length } -Descending |
-    Where-Object { -not (Get-ChildItem -LiteralPath $_.FullName -Force) } |
-    Remove-Item -Force
-
-$leaked = Get-ChildItem -LiteralPath $clone -Recurse -File |
-    Where-Object { $_.FullName -notlike (Join-Path $clone '.git\*') } |
-    Where-Object { $_.Extension -in @('.rpe', '.lua', '.asi', '.log', '.obj', '.pdb') -or $_.Name -eq 'rwcore.h' }
-if ($leaked) { throw "Public tree contains files that must not be published: $($leaked.Name -join ', ')" }
+}
 
 Write-Host "Updated: $clone"
 & git -C $clone status --short

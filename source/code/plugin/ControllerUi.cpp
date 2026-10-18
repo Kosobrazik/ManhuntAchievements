@@ -27,12 +27,31 @@ bool Active(const State& state)
     return (state.flags & ManhuntGInputUI::ControllerActive) != 0;
 }
 
-std::wstring Button(const State& state, std::uint16_t glyph, const wchar_t* fallback)
+std::wstring ButtonFrom(const State& state, std::uint16_t glyph, const wchar_t* fallback,
+    ManhuntGInputUI::ButtonNameQuery names)
 {
     if (Active(state) && (state.flags & ManhuntGInputUI::InlineGlyphs) &&
         glyph >= 0xE000 && glyph <= 0xE013)
         return std::wstring(1, static_cast<wchar_t>(glyph));
+    // Icons off: GInput spells the button the way its own menus do -- the
+    // console's naming the player chose and the player's translation -- so the
+    // gallery says "TRIANGLE" when Triangle is what goes back, not our guess.
+    if (Active(state) && names)
+    {
+        if (const wchar_t* name = names(glyph))
+            return name;
+    }
     return fallback;
+}
+
+std::wstring Button(const State& state, std::uint16_t glyph, const wchar_t* fallback)
+{
+    // Discovered like the state itself; a GInput without the lookup keeps our
+    // own spelling.
+    HMODULE module = GetModuleHandleW(L"ManhuntGInput.asi");
+    const auto names = module ? reinterpret_cast<ManhuntGInputUI::ButtonNameQuery>(
+        GetProcAddress(module, ManhuntGInputUI::ButtonNameExport)) : nullptr;
+    return ButtonFrom(state, glyph, fallback, names);
 }
 
 void PageInput::Reset(const State& state)

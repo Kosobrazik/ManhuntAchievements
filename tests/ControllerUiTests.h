@@ -4,6 +4,10 @@
 
 namespace {
 ManhuntGInputUI::State fakeUi{};
+const wchar_t* __cdecl FakeButtonName(std::uint16_t glyph)
+{
+    return glyph == 0xE000 ? L"TRIANGLE" : nullptr;
+}
 int __cdecl FakeUiQuery(std::uint32_t, ManhuntGInputUI::State* state, std::uint32_t)
 {
     *state = fakeUi;
@@ -31,6 +35,17 @@ void TestControllerUi()
     check(ControllerUi::Button(state, 0xFFFF, L"B") == L"B");
     state.flags = UI::ControllerActive;
     check(ControllerUi::Button(state, state.back, L"B") == L"B");
+    // Icons off: GInput's own name for the button, when it offers one.
+    state.back = 0xE000;
+    check(ControllerUi::ButtonFrom(state, state.back, L"B", FakeButtonName) == L"TRIANGLE");
+    check(ControllerUi::ButtonFrom(state, 0xE001, L"B", FakeButtonName) == L"B");
+    check(ControllerUi::ButtonFrom(state, state.back, L"B", nullptr) == L"B");
+    state.flags = UI::ControllerActive | UI::InlineGlyphs;
+    check(ControllerUi::ButtonFrom(state, state.back, L"B", FakeButtonName) == L"\uE000");
+    state.flags = 0;
+    check(ControllerUi::ButtonFrom(state, state.back, L"Back", FakeButtonName) == L"Back");
+    state.flags = UI::ControllerActive;
+    state.back = 0xE001;
     state.flags = 0;
     check(ControllerUi::Button(state, state.back, L"Back") == L"Back");
 

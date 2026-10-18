@@ -1,4 +1,5 @@
 #include "AchievementMenu.h"
+#include "AchievementText.h"
 #include "ControllerUi.h"
 #include "PluginCompatibility.h"
 #include "HookSites.h"
@@ -15,9 +16,13 @@
 #include "../manhunt/Cheats.h"
 #include "../../MHWSF.h"
 #include "eLog.h"
+#include "AchievementTextEncoding.h"
+#include "AchievementTranslation.h"
 #include <cstring>
 #include <cwchar>
 #include <filesystem>
+#include <fstream>
+#include <iterator>
 #include <string>
 #include <vector>
 #define ACHIEVEMENTS_PER_PAGE 6
@@ -52,22 +57,24 @@ namespace
 	// Only used when no other plugin owns the main menu and we draw the whole
 	// vanilla list ourselves. Another plugin's own rows are never reproduced here.
 	enum MenuAction { Play, SelectScene, LoadGame, Settings, Bonus, Achievements, Quit };
-	struct MainRow { const char* key; const wchar_t* english; const wchar_t* russian; MenuAction action; };
+	// A row without a key is ours, and its label is the one word we translate
+	// ourselves; the rest the game names in whatever language it runs in.
+	struct MainRow { const char* key; MenuAction action; };
 	const MainRow mainRows[] = {
-		{"PLAY",nullptr,nullptr,Play}, {"SELSCE",nullptr,nullptr,SelectScene},
-		{"LOADG",nullptr,nullptr,LoadGame}, {"SETT",nullptr,nullptr,Settings},
-		{"BONFEA",nullptr,nullptr,Bonus},
-		{nullptr,L"ACHIEVEMENTS",L"ДОСТИЖЕНИЯ",Achievements},
-		{"QUITPRG",nullptr,nullptr,Quit}
+		{"PLAY",Play}, {"SELSCE",SelectScene},
+		{"LOADG",LoadGame}, {"SETT",Settings},
+		{"BONFEA",Bonus},
+		{nullptr,Achievements},
+		{"QUITPRG",Quit}
 	};
 	constexpr int kMainRowCount = 7;
 
-	bool IsRussianGameLocalization();
-	std::wstring ToRussianGameWideText(const wchar_t* text);
+	std::wstring GalleryText(const wchar_t* english, const wchar_t* russian,
+		const wchar_t* GalleryPhrases::* phrase);
 	std::wstring AchievementRowLabel()
 	{
-		return IsRussianGameLocalization() ?
-			ToRussianGameWideText(L"ДОСТИЖЕНИЯ") : L"ACHIEVEMENTS";
+		return GalleryText(L"ACHIEVEMENTS", L"ДОСТИЖЕНИЯ",
+			&GalleryPhrases::achievements);
 	}
 
 	// Filled in while another plugin's main menu draw runs, so our appended row
@@ -194,53 +201,30 @@ namespace
 		// The 1C localization replaces the English text bank. Depending on the
 		// version, Cyrillic is returned either as Unicode or as CP1251 bytes
 		// widened to wchar_t, so checking only U+0400-U+04FF is not sufficient.
+		// Only strings that reach us as the game has them: "IBACK" is left out,
+		// because ManhuntGInput writes a button's name into it.
 		const char* localizationKeys[] =
 		{
-			"PLAY", "LOADG", "SETT", "QUITPRG", "MAINM", "IBACK"
+			"PLAY", "LOADG", "SETT", "QUITPRG", "MAINM"
 		};
 
-		int unicodeCyrillicLetters = 0;
-		int widenedCp1251Letters = 0;
+		AchievementTextEncoding::LetterCounts counts;
 		for (const char* key : localizationKeys)
+			AchievementTextEncoding::CountLetters(CText::GetFromKey16(key), counts);
+
+		switch (AchievementTextEncoding::Classify(counts))
 		{
-			const wchar_t* text = CText::GetFromKey16(key);
-			if (!text)
-				continue;
-
-			for (; *text; ++text)
-			{
-				const wchar_t character = *text;
-				if (character >= L'\u0400' && character <= L'\u04FF')
-					++unicodeCyrillicLetters;
-
-				// А-я and Ё/ё when the original CP1251 byte was simply widened.
-				if ((character >= L'\u00C0' && character <= L'\u00FF' &&
-					character != L'\u00D7' && character != L'\u00F7') ||
-					character == L'\u00A8' || character == L'\u00B8')
-				{
-					++widenedCp1251Letters;
-				}
-			}
-		}
-
-		if (unicodeCyrillicLetters > 0)
+		case AchievementTextEncoding::Kind::UnicodeRussian:
 			return AchievementWideTextEncoding::UnicodeRussian;
-
-		// A few extended Latin characters can occur in other localizations;
-		// Russian menu strings contain many CP1251 letters.
-		if (widenedCp1251Letters >= 3 ||
-			AchievementSettings::iAchievementLanguage == 2)
-		{
+		case AchievementTextEncoding::Kind::WidenedCp1251Russian:
 			return AchievementWideTextEncoding::WidenedCp1251Russian;
+		default:
+			break;
 		}
+		if (AchievementSettings::iAchievementLanguage == 2)
+			return AchievementWideTextEncoding::WidenedCp1251Russian;
 
 		return AchievementWideTextEncoding::English;
-	}
-
-	bool IsRussianGameLocalization()
-	{
-		return GetAchievementWideTextEncoding() !=
-			AchievementWideTextEncoding::English;
 	}
 
 	// The 1C font is not plain CP1251. Verified against the shipped Russian
@@ -304,6 +288,262 @@ namespace
 		for (const unsigned char character : cp1251Text)
 			result.push_back(static_cast<wchar_t>(character));
 		return result;
+	}
+
+	// Which language the gallery speaks. Besides English the game ships French,
+	// German, Italian and Spanish text, and its font draws their letters, so a
+	// player running the game in one of those reads the gallery in it too.
+	// Russian comes from a fan translation that replaces the English bank and is
+	// recognised by its letters rather than by a word.
+	enum class AchievementLanguage
+	{
+		English, Russian, German, French, Spanish, Italian
+	};
+
+	AchievementLanguage GetAchievementLanguage()
+	{
+		switch (AchievementSettings::iAchievementLanguage)
+		{
+		case 1: return AchievementLanguage::English;
+		case 2: return AchievementLanguage::Russian;
+		case 3: return AchievementLanguage::German;
+		case 4: return AchievementLanguage::French;
+		case 5: return AchievementLanguage::Spanish;
+		case 6: return AchievementLanguage::Italian;
+		default: break;
+		}
+
+		if (GetAchievementWideTextEncoding() != AchievementWideTextEncoding::English)
+			return AchievementLanguage::Russian;
+
+		// The word the game itself puts on the first row of the main menu. It
+		// differs in every bank the game ships, so one lookup names the language
+		// without knowing which of the files was installed.
+		struct MenuWord { const wchar_t* play; AchievementLanguage language; };
+		static const MenuWord kMenuWords[] = {
+			{ L"SPIELEN", AchievementLanguage::German },
+			{ L"JOUER", AchievementLanguage::French },
+			{ L"JUGAR", AchievementLanguage::Spanish },
+			{ L"GIOCA", AchievementLanguage::Italian },
+		};
+		if (const wchar_t* play = CText::GetFromKey16("PLAY"))
+		{
+			for (const MenuWord& word : kMenuWords)
+			{
+				if (_wcsicmp(play, word.play) == 0)
+					return word.language;
+			}
+		}
+		return AchievementLanguage::English;
+	}
+
+	const GalleryPhrases* PhrasesOf(AchievementLanguage language)
+	{
+		switch (language)
+		{
+		case AchievementLanguage::German: return &kGermanPhrases;
+		case AchievementLanguage::French: return &kFrenchPhrases;
+		case AchievementLanguage::Spanish: return &kSpanishPhrases;
+		case AchievementLanguage::Italian: return &kItalianPhrases;
+		default: return nullptr;
+		}
+	}
+
+	// The translation for the language the game is in now, read from
+	// data\ManhuntAchievements\lang (AchievementTranslation.h). A file says which
+	// language it is for with its Match line: the game's own "control type"
+	// label, so a language switched by MHLL switches the file with it. A file
+	// without a Match stands in only when the game is in English or a language
+	// the mod does not ship. None when the INI picks a language. The folder is
+	// read again only when the game's language changes.
+	const AchievementTranslation::Translation* ActiveTranslation()
+	{
+		if (AchievementSettings::iAchievementLanguage != 0)
+			return nullptr;
+		const wchar_t* probe = CText::GetFromKey16("CONTTYP");
+		if (!probe || !probe[0])
+			return nullptr;
+		static std::wstring lastProbe;
+		static AchievementTranslation::Translation chosen;
+		static bool haveChosen = false;
+		if (lastProbe == probe)
+			return haveChosen ? &chosen : nullptr;
+		lastProbe = probe;
+		haveChosen = false;
+
+		AchievementTranslation::Translation fallback;
+		bool haveFallback = false;
+		std::filesystem::path chosenPath, fallbackPath;
+		const std::filesystem::path pattern(AchievementSettings::sTranslationFiles);
+		wchar_t gameFile[MAX_PATH] = {};
+		GetModuleFileNameW(nullptr, gameFile, MAX_PATH);
+		const std::filesystem::path roots[] = {
+			AchievementSettings::ModuleDirectory(),
+			std::filesystem::path(gameFile).parent_path(),
+		};
+		for (const std::filesystem::path& root : roots)
+		{
+			const std::filesystem::path files = pattern.is_absolute() ? pattern : root / pattern;
+			WIN32_FIND_DATAW found = {};
+			HANDLE search = FindFirstFileW(files.c_str(), &found);
+			if (search == INVALID_HANDLE_VALUE)
+				continue;
+			do
+			{
+				if (found.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
+					continue;
+				const std::filesystem::path file = files.parent_path() / found.cFileName;
+				std::ifstream stream(file, std::ios::binary);
+				AchievementTranslation::Translation translation = AchievementTranslation::Parse(
+					std::string(std::istreambuf_iterator<char>(stream), std::istreambuf_iterator<char>()));
+				if (translation.count == 0)
+					continue;
+				if (!translation.match.empty())
+				{
+					if (translation.match != probe)
+						continue;
+					chosen = std::move(translation);
+					chosenPath = file;
+					haveChosen = true;
+					break;
+				}
+				if (!haveFallback)
+				{
+					fallback = std::move(translation);
+					fallbackPath = file;
+					haveFallback = true;
+				}
+			} while (FindNextFileW(search, &found));
+			FindClose(search);
+			if (haveChosen || pattern.is_absolute())
+				break;
+		}
+		if (!haveChosen && haveFallback && GetAchievementLanguage() == AchievementLanguage::English)
+		{
+			chosen = std::move(fallback);
+			chosenPath = fallbackPath;
+			haveChosen = true;
+		}
+		if (haveChosen)
+			eLog::Message(__FUNCTION__, "Gallery translation: %d strings from %s",
+				chosen.count, chosenPath.string().c_str());
+		return haveChosen ? &chosen : nullptr;
+	}
+
+	// Which translation phrase a gallery phrase is, in AchievementTranslation's
+	// order; -1 for none.
+	int PhraseIndexOf(const wchar_t* GalleryPhrases::* phrase)
+	{
+		const wchar_t* GalleryPhrases::* const members[AchievementTranslation::PhraseCount] = {
+			&GalleryPhrases::achievements, &GalleryPhrases::achievementsCount,
+			&GalleryPhrases::unlocked, &GalleryPhrases::selectHint,
+			&GalleryPhrases::pageHint, &GalleryPhrases::selectAction,
+			&GalleryPhrases::pagesAction, &GalleryPhrases::backAction,
+		};
+		for (int index = 0; index < AchievementTranslation::PhraseCount; ++index)
+		{
+			if (members[index] == phrase)
+				return index;
+		}
+		return -1;
+	}
+
+	// The counter's title is a format: it must still take exactly two numbers.
+	bool UsableCounterFormat(const std::wstring& format)
+	{
+		size_t percents = 0, numbers = 0;
+		for (size_t index = 0; index < format.size(); ++index)
+		{
+			if (format[index] != L'%')
+				continue;
+			++percents;
+			if (index + 1 < format.size() && format[index + 1] == L'd')
+				++numbers;
+		}
+		return percents == 2 && numbers == 2;
+	}
+
+	// One of the gallery's own words. The tables are already written in the
+	// single byte codes the font draws, so only Russian goes through the fold
+	// onto the glyphs the 1C font actually has.
+	std::wstring GalleryText(const wchar_t* english, const wchar_t* russian,
+		const wchar_t* GalleryPhrases::* phrase)
+	{
+		if (const AchievementTranslation::Translation* translation = ActiveTranslation())
+		{
+			const int index = PhraseIndexOf(phrase);
+			if (index >= 0 && !translation->phrases[index].empty() &&
+				(index != AchievementTranslation::TitleCount ||
+					UsableCounterFormat(translation->phrases[index])))
+				return translation->phrases[index];
+		}
+		const AchievementLanguage language = GetAchievementLanguage();
+		if (const GalleryPhrases* phrases = PhrasesOf(language))
+			return phrases->*phrase;
+		return language == AchievementLanguage::Russian ?
+			ToRussianGameWideText(russian) : std::wstring(english);
+	}
+
+	const AchievementLocalizedText* LocalizedAchievementText(
+		AchievementLanguage language, int index)
+	{
+		static_assert(sizeof(kGermanAchievementText) / sizeof(kGermanAchievementText[0]) ==
+			ACHIEVEMENT_ICON_COUNT &&
+			sizeof(kFrenchAchievementText) / sizeof(kFrenchAchievementText[0]) ==
+			ACHIEVEMENT_ICON_COUNT &&
+			sizeof(kSpanishAchievementText) / sizeof(kSpanishAchievementText[0]) ==
+			ACHIEVEMENT_ICON_COUNT &&
+			sizeof(kItalianAchievementText) / sizeof(kItalianAchievementText[0]) ==
+			ACHIEVEMENT_ICON_COUNT,
+			"every language names all of the achievements");
+		if (index < 0 || index >= ACHIEVEMENT_ICON_COUNT)
+			return nullptr;
+		switch (language)
+		{
+		case AchievementLanguage::German: return &kGermanAchievementText[index];
+		case AchievementLanguage::French: return &kFrenchAchievementText[index];
+		case AchievementLanguage::Spanish: return &kSpanishAchievementText[index];
+		case AchievementLanguage::Italian: return &kItalianAchievementText[index];
+		default: return nullptr;
+		}
+	}
+
+	std::wstring AchievementName(const AchievementGalleryEntry& achievement)
+	{
+		const AchievementLanguage language = GetAchievementLanguage();
+		const int index = static_cast<int>(&achievement - ACHIEVEMENT_GALLERY);
+		if (const AchievementTranslation::Translation* translation = ActiveTranslation())
+		{
+			if (index >= 0 && index < AchievementTranslation::kAchievementCount &&
+				!translation->names[index].empty())
+				return translation->names[index];
+		}
+		if (const AchievementLocalizedText* text =
+			LocalizedAchievementText(language, index))
+			return text->name;
+		if (language == AchievementLanguage::Russian)
+			return ToRussianGameWideText(achievement.russianName);
+		return std::wstring(achievement.name,
+			achievement.name + strlen(achievement.name));
+	}
+
+	std::wstring AchievementDescription(const AchievementGalleryEntry& achievement)
+	{
+		const AchievementLanguage language = GetAchievementLanguage();
+		const int index = static_cast<int>(&achievement - ACHIEVEMENT_GALLERY);
+		if (const AchievementTranslation::Translation* translation = ActiveTranslation())
+		{
+			if (index >= 0 && index < AchievementTranslation::kAchievementCount &&
+				!translation->descriptions[index].empty())
+				return translation->descriptions[index];
+		}
+		if (const AchievementLocalizedText* text =
+			LocalizedAchievementText(language, index))
+			return text->description;
+		if (language == AchievementLanguage::Russian)
+			return ToRussianGameWideText(achievement.russianDescription);
+		return std::wstring(achievement.description,
+			achievement.description + strlen(achievement.description));
 	}
 
 	const AchievementGalleryEntry* FindAchievementGalleryEntry(eAchievementID id)
@@ -582,8 +822,7 @@ void AchievementMenu::HookPauseMenuDraw()
 	// Selection 4 wraps before original selection 0, so drawing it one row above
 	// the original menu keeps both keyboard and mouse order natural.
 	const float y = 0.68f - rowSpacing;
-	const std::wstring achievementLabel = IsRussianGameLocalization() ?
-		ToRussianGameWideText(L"ДОСТИЖЕНИЯ") : L"ACHIEVEMENTS";
+	const std::wstring achievementLabel = AchievementRowLabel();
 	wchar_t* label = const_cast<wchar_t*>(achievementLabel.c_str());
 	const float width = CFrontend::CalculateTextLen(label, scaleX, FONT_FRONTEND);
 	const float x = 0.5f - width * 0.5f;
@@ -601,13 +840,12 @@ void AchievementMenu::AchievementsMenu()
         eLog::Message(__FUNCTION__, "First achievement gallery render; resolving textures and optional controller UI");
     }
 	LoadAchievementTextures();
-	const bool useRussian = IsRussianGameLocalization();
 	const auto controller = ControllerUi::Read();
 	const bool controllerActive = ControllerUi::Active(controller);
 
 	m_nCurrentAchievementPage = m_nCurrentAchievementPos / ACHIEVEMENTS_PER_PAGE;
-	const std::wstring counterFormat = useRussian ?
-		ToRussianGameWideText(L"ДОСТИЖЕНИЯ %d/%d") : L"ACHIEVEMENTS %d/%d";
+	const std::wstring counterFormat = GalleryText(L"ACHIEVEMENTS %d/%d",
+		L"ДОСТИЖЕНИЯ %d/%d", &GalleryPhrases::achievementsCount);
 	wsprintfW(m_szStatsBuffer, counterFormat.c_str(),
 		m_nCurrentAchievementPage + 1, m_allAchievementPages);
 	CFrontend::DrawMenuCameraCounter(m_szStatsBuffer);
@@ -729,13 +967,9 @@ void AchievementMenu::AchievementsMenu()
 		ACHIEVEMENT_GALLERY[m_nCurrentAchievementPos];
 	const bool selectedAchievementConcealed = IsAchievementConcealed(selectedAchievement);
 	const std::wstring selectedName = selectedAchievementConcealed ? L"???" :
-		(useRussian ? ToRussianGameWideText(selectedAchievement.russianName) :
-			std::wstring(selectedAchievement.name,
-				selectedAchievement.name + strlen(selectedAchievement.name)));
+		AchievementName(selectedAchievement);
 	const std::wstring selectedDescription = selectedAchievementConcealed ? L"???" :
-		(useRussian ? ToRussianGameWideText(selectedAchievement.russianDescription) :
-			std::wstring(selectedAchievement.description,
-				selectedAchievement.description + strlen(selectedAchievement.description)));
+		AchievementDescription(selectedAchievement);
 	PrintCenteredWideTextFitted(selectedName.c_str(), 0.5f, 0.690f,
 		0.76f, 0.64f, 0.42f, 255, 255, 255, 255);
 	PrintCenteredWideTextFitted(selectedDescription.c_str(), 0.5f, 0.735f,
@@ -788,23 +1022,22 @@ void AchievementMenu::AchievementsMenu()
 		}
 	}
 
-	std::wstring navigationHint = useRussian ?
-		ToRussianGameWideText(L"Стрелки / колесо: выбор") :
-		L"Arrows / wheel: select";
-	std::wstring pageHint = useRussian ?
-		ToRussianGameWideText(L"Вкладки: страница") : L"Tabs: page";
+	std::wstring navigationHint = GalleryText(L"Arrows / wheel: select",
+		L"Стрелки / колесо: выбор", &GalleryPhrases::selectHint);
+	std::wstring pageHint = GalleryText(L"Tabs: page", L"Вкладки: страница",
+		&GalleryPhrases::pageHint);
 	std::wstring backHint;
 	if (controllerActive)
 	{
 		const bool ps = controller.glyphSet == ManhuntGInputUI::PlayStation;
 		navigationHint = ControllerUi::Button(controller, controller.horizontal, L"D-pad") + L" " +
 			ControllerUi::Button(controller, controller.vertical, L"/ LS") + L": " +
-			(useRussian ? ToRussianGameWideText(L"выбор") : L"select");
+			GalleryText(L"select", L"выбор", &GalleryPhrases::selectAction);
 		pageHint = ControllerUi::Button(controller, controller.previousPage, ps ? L"L1" : L"LB") + L" / " +
 			ControllerUi::Button(controller, controller.nextPage, ps ? L"R1" : L"RB") + L": " +
-			(useRussian ? ToRussianGameWideText(L"страницы") : L"pages");
+			GalleryText(L"pages", L"страницы", &GalleryPhrases::pagesAction);
 		backHint = ControllerUi::Button(controller, controller.back, ps ? L"CIRCLE" : L"B") + L": " +
-			(useRussian ? ToRussianGameWideText(L"назад") : L"back");
+			GalleryText(L"back", L"назад", &GalleryPhrases::backAction);
 	}
 	CFrontend::PrintInfo(const_cast<wchar_t*>(navigationHint.c_str()),
 		const_cast<wchar_t*>(pageHint.c_str()),
@@ -814,29 +1047,19 @@ void AchievementMenu::AchievementsMenu()
 std::wstring AchievementMenu::GetLocalizedAchievementName(eAchievementID id)
 {
 	const AchievementGalleryEntry* achievement = FindAchievementGalleryEntry(id);
-	if (!achievement)
-		return {};
-	if (IsRussianGameLocalization())
-		return ToRussianGameWideText(achievement->russianName);
-	return std::wstring(achievement->name,
-		achievement->name + strlen(achievement->name));
+	return achievement ? AchievementName(*achievement) : std::wstring();
 }
 
 std::wstring AchievementMenu::GetLocalizedAchievementDescription(eAchievementID id)
 {
 	const AchievementGalleryEntry* achievement = FindAchievementGalleryEntry(id);
-	if (!achievement)
-		return {};
-	if (IsRussianGameLocalization())
-		return ToRussianGameWideText(achievement->russianDescription);
-	return std::wstring(achievement->description,
-		achievement->description + strlen(achievement->description));
+	return achievement ? AchievementDescription(*achievement) : std::wstring();
 }
 
 std::wstring AchievementMenu::GetLocalizedAchievementUnlockedText()
 {
-	return IsRussianGameLocalization() ?
-		ToRussianGameWideText(L"ДОСТИЖЕНИЕ ПОЛУЧЕНО") : L"ACHIEVEMENT UNLOCKED";
+	return GalleryText(L"ACHIEVEMENT UNLOCKED", L"ДОСТИЖЕНИЕ ПОЛУЧЕНО",
+		&GalleryPhrases::unlocked);
 }
 
 int AchievementMenu::GetAchievementSmallTexture(eAchievementID id)
@@ -1231,7 +1454,7 @@ void AchievementMenu::MainMenu()
     {
         const auto& row=mainRows[button];
         std::wstring custom;
-        if (!row.key) custom=row.russian && IsRussianGameLocalization() ? ToRussianGameWideText(row.russian) : row.english;
+        if (!row.key) custom=AchievementRowLabel();
         wchar_t* label=row.key ? CText::GetFromKey16(row.key) : const_cast<wchar_t*>(custom.c_str());
         CFrontend::AddOption(label, x, y,
             CFrontend::ms_fTextXScale, CFrontend::ms_fTextYScale,
